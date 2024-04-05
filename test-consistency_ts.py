@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-from example_time_series import df
+from example import df
 
 '''
 def check_column_homogeneity(dataframe):
@@ -84,8 +84,3 @@ def run_data_quality_checks(dataframe):
     print("All data quality checks passed successfully.")
 
 run_data_quality_checks(df)
-
-'''
-csv_file_path = 'df_export.csv'
-df = pd.read_csv(csv_file_path)
-'''

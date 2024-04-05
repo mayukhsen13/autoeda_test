@@ -2,14 +2,8 @@ import pytest
 from unittest.mock import patch
 import pandas as pd
 import numpy as np
-from ts_lib import plot_ts  
-from ts_lib import append_datetime_cols
-from ts_lib import periodic_kde
-from ts_lib import create_windowed_df  
-from ts_lib import create_windowed_df
+from library import AutoEDA
 from unittest.mock import patch, MagicMock, ANY
-from ts_lib import seasonal_decompositions  
-from ts_lib import seasonal_catplot
 from statsmodels.tsa.seasonal import seasonal_decompose
 
 
@@ -24,9 +18,12 @@ def test_plot_ts():
     df = pd.DataFrame(data)
     df.set_index('date', inplace=True)
 
+    # Initialize AutoEDA with the DataFrame
+    auto_eda = AutoEDA(df=df, label_col='value', index=True)
+
     # Mock plt.show() to not actually display the plot during the test
     with patch('matplotlib.pyplot.show') as mocked_show:
-        plot_ts(df, 'value')
+        auto_eda.plot_ts()
         # Verify plt.show() was called once
         mocked_show.assert_called_once()
 
@@ -39,9 +36,11 @@ def test_append_datetime_cols_with_column():
     data = {'date': pd.date_range(start='2020-01-01', periods=3, freq='D'),
             'value': [1, 2, 3]}
     df = pd.DataFrame(data)
+    # Initialize AutoEDA with the DataFrame
+    auto_eda = AutoEDA(df=df, label_col='value', dt_col='date', index=False)
 
     # Apply function
-    result_df = append_datetime_cols(df, col='date')
+    result_df = auto_eda.append_datetime_cols()
 
     # Check new columns are added
     assert all(col in result_df.columns for col in ['year', 'month', 'day', 'week_of_year', 'week_of_month']), "Not all datetime components were added correctly"
@@ -51,9 +50,11 @@ def test_append_datetime_cols_with_index():
     data = {'value': [1, 2, 3]}
     dates = pd.date_range(start='2020-01-01', periods=3, freq='D')
     df = pd.DataFrame(data, index=dates)
+    # Initialize AutoEDA with the DataFrame
+    auto_eda = AutoEDA(df=df, label_col='value', index=True)
 
     # Apply function with index=True
-    result_df = append_datetime_cols(df, index=True)
+    result_df = auto_eda.append_datetime_cols()
 
     # Check new columns are added
     assert all(col in result_df.columns for col in ['year', 'month', 'day', 'week_of_year', 'week_of_month']), "Datetime components not added correctly for datetime indexed DataFrame"
@@ -64,8 +65,11 @@ def test_append_datetime_cols_format_parsing():
             'value': [1, 2, 3]}
     df = pd.DataFrame(data)
 
+    # Initialize AutoEDA with the DataFrame
+    auto_eda = AutoEDA(df=df, label_col='value', dt_col='date', index=False)
+
     # Apply function with a custom datetime format
-    result_df = append_datetime_cols(df, col='date', dt_format='%d-%Y-%m')
+    result_df = auto_eda.append_datetime_cols(dt_format='%d-%Y-%m')
 
     # Check if dates were parsed correctly
     assert all(result_df['year'] == 2020), "Year was not parsed correctly"
@@ -73,30 +77,7 @@ def test_append_datetime_cols_format_parsing():
 
 #####################################################################################################################
 
-# Test the periodic_kde_plot function
-'''
-@pytest.fixture
-def sample_dataframe():
-    """Fixture to provide a sample DataFrame for tests."""
-    data = {'date': pd.date_range(start='2020-01-01', periods=60, freq='D'),  # Two months of data
-            'value': range(60)}  # Simple range of values
-    df = pd.DataFrame(data)
-    df.set_index('date', inplace=True)
-    return df
 
-def test_periodic_kde_plot_grouping(sample_dataframe):
-    """Test that periodic_kde attempts to generate a KDE plot for each non-empty month."""
-    # We expect two non-empty months based on the sample data provided
-    expected_plot_calls = 2
-
-    with patch('matplotlib.pyplot.plot') as mocked_plot:
-        # Execute the function with the DataFrame
-        periodic_kde(sample_dataframe, 'value', 'M', index=True)
-        
-        # Verify plt.plot was called the expected number of times
-        assert mocked_plot.call_count == expected_plot_calls, f"Expected {expected_plot_calls} plot calls, got {mocked_plot.call_count}"
-
-'''
 
 #####################################################################################################################
 
@@ -109,9 +90,12 @@ def test_create_windowed_df():
     dates = pd.date_range(start='2020-01-01', periods=10, freq='D')
     df = pd.DataFrame(data, index=dates)
 
+    # Initialize AutoEDA with the DataFrame
+    auto_eda = AutoEDA(df=df, label_col='value', index=True)
+
     # Apply function
     num_periods = 3
-    result_df = create_windowed_df(df, num_periods, 'value')
+    result_df = auto_eda.create_windowed_df(num_periods, 'value')
 
     # Check the shape of the resulting DataFrame
     assert result_df.shape == (7, 4), "Windowed DataFrame shape is incorrect"
@@ -149,26 +133,30 @@ def test_seasonal_decompositions():
 #####################################################################################################################
 # Test the seasonal_catplot function
 
-# Test for seasonal_catplot with boxplot
 def test_seasonal_catplot_boxplot():
     data = {'date': pd.date_range(start='2020-01-01', periods=365, freq='D'),
             'USD': np.random.rand(365)}
     df = pd.DataFrame(data)
 
+    # Initialize AutoEDA
+    auto_eda = AutoEDA(df=df, label_col='USD', dt_col='date', index=False)
+
     with patch('seaborn.boxplot') as mocked_boxplot, \
          patch('matplotlib.pyplot.show'):
-        seasonal_catplot(df, 'USD', 'boxplot', col='date')
+        auto_eda.seasonal_catplots(kind='boxplot')
         # Check if seaborn.boxplot is called at least once
         mocked_boxplot.assert_called()
 
-# Test for seasonal_catplot with violinplot
 def test_seasonal_catplot_violinplot():
     data = {'date': pd.date_range(start='2020-01-01', periods=365, freq='D'),
             'USD': np.random.rand(365)}
     df = pd.DataFrame(data)
 
+    # Initialize AutoEDA
+    auto_eda = AutoEDA(df=df, label_col='USD', dt_col='date', index=False)
+
     with patch('seaborn.violinplot') as mocked_violinplot, \
          patch('matplotlib.pyplot.show'):
-        seasonal_catplot(df, 'USD', 'violinplot', col='date')
+        auto_eda.seasonal_catplots(kind='violinplot')
         # Check if seaborn.violinplot is called at least once
         mocked_violinplot.assert_called()
