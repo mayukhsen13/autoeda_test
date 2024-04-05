@@ -7,6 +7,9 @@ from statsmodels.tsa.seasonal import seasonal_decompose
 import matplotlib as mpl
 import calendar
 from IPython.display import display
+import statsmodels.api as sm
+from sklearn.decomposition import PCA
+import calendar
 
 #####################################################################################################################
 
@@ -167,18 +170,16 @@ class AutoEDA:
             plt.show()
 
     def periodic_kde(self, freq):
-
-        ''' 
-        Takes pandas DataFrame with datetime column and target variable 
-        and returns periodic kde plots at a specified frequency
-
-        : freq : 'M' for month or 'Y' for year
         '''
+    Takes pandas DataFrame with datetime column and target variable
+    and returns periodic kde plots at a specified frequency
 
-        if self.index == True:
-            df = self.df.reset_index().rename(columns={'index':'date'})
+    :param freq: 'M' for month or 'Y' for year
+        '''
+    
+        if self.index:
+            df = self.df.reset_index().rename(columns={'index': 'date'})
             dt_col = 'date'
-            
         else:
             df = self.df
             dt_col = self.dt_col
@@ -191,15 +192,22 @@ class AutoEDA:
                 if len(month) > 1:
                     month_num = month[dt_col].dt.month.values[0]
                     month_name = calendar.month_name[month_num]
-                    month[self.label_col].plot(kind='kde', label=month_name, figsize=(20,10), legend=True, title=self.label_col)
+                    plt.figure(figsize=(20, 10))
+                    month[self.label_col].plot(kind='kde', label=month_name)
+                    plt.title(f'{self.label_col} KDE for {month_name}')
+                    plt.legend()
             plt.show()
 
         if freq == 'Y':
-            for idx,year in enumerate(periods):
+            for idx, year in enumerate(periods):
                 if len(year) > 1:
                     year_num = year[dt_col].dt.year.values[0]
-                    year[self.label_col].plot(kind='kde', label=year_num, figsize=(20,10), legend=True, title=self.label_col)
+                    plt.figure(figsize=(20, 10))
+                    year[self.label_col].plot(kind='kde', label=str(year_num))
+                    plt.title(f'{self.label_col} KDE for {year_num}')
+                    plt.legend()
             plt.show()
+
 
 def Explore(df, label_col):
     display(df.describe().reset_index()) # display for notebooks
@@ -252,5 +260,103 @@ def make_fourier(df:pd.DataFrame, periodic_cols:list, K:int=1) -> pd.DataFrame:
         df = df.drop(columns=[col])
     return df
 
+# Harmonic Regression
+
+
+def harmonic_regression(df, target_col, harmonic_cols):
+    '''
+    Fits a harmonic regression model to the specified target variable in the DataFrame.
+    Assumes that sine and cosine terms for the frequencies are already calculated and present in the DataFrame.
+
+    :param df: DataFrame containing the data
+    :param target_col: Column name of the target variable
+    :param harmonic_cols: List of column names of the sine and cosine terms
+    :return: Fitted model and the DataFrame with predictions
+    '''
+
+    # Add a constant to the DataFrame for the intercept
+    X = sm.add_constant(df[harmonic_cols])
+    y = df[target_col]
+
+    # Fit the regression model
+    model = sm.OLS(y, X).fit()
+
+    # Predict using the model
+    df['predicted'] = model.predict(X)
+
+    return model, df
+
+#Principal Component Analysis
+
+def perform_pca(df, n_components=None):
+    
+    """
+    Performs principal component analysis on the given dataframe.
+
+    :param df: DataFrame containing the data
+    :param n_components: Number of components to keep. If n_components is not set then all components are kept
+    :return: pca object, DataFrame of the principal components
+    """
+    # Standardize the data
+    df_standardized = (df - df.mean()) / df.std()
+    
+    # Initialize PCA
+    pca = PCA(n_components=n_components)
+    principal_components = pca.fit_transform(df_standardized)
+    
+    # Create a DataFrame with the principal components
+    pc_df = pd.DataFrame(data=principal_components,
+                         columns=[f'PC{i+1}' for i in range(principal_components.shape[1])],
+                         index=df.index)
+    
+    return pca, pc_df
+
+#PCA Plots 
+def biplot(score, coeff, labels=None):
+    xs = score[:, 0]
+    ys = score[:, 1]
+    n = min(coeff.shape[0], len(labels) if labels is not None else coeff.shape[0])
+    
+    scalex = 1.0 / (xs.max() - xs.min())
+    scaley = 1.0 / (ys.max() - ys.min())
+    
+    plt.scatter(xs * scalex, ys * scaley, c='blue')
+    
+    for i in range(n):
+        plt.arrow(0, 0, coeff[i, 0], coeff[i, 1], color='red', alpha=0.5)
+        if labels is not None:
+            plt.text(coeff[i, 0] * 1.15, coeff[i, 1] * 1.15, labels[i], color='green', ha='center', va='center')
+
+    plt.xlim(-1, 1)
+    plt.ylim(-1, 1)
+    plt.xlabel("PC{}".format(1))
+    plt.ylabel("PC{}".format(2))
+    plt.grid()
+
+#Scree Plot
+
+def create_scree_plot(pca):
+    """
+    Creates a scree plot for the explained variance of the principal components.
+
+    :param pca: PCA object
+    """
+    plt.figure(figsize=(14, 6))
+
+    # Individual explained variance
+    plt.subplot(1, 2, 1)
+    plt.bar(range(1, len(pca.explained_variance_ratio_) + 1), pca.explained_variance_ratio_, alpha=0.5, color='blue')
+    plt.ylabel('Explained variance ratio')
+    plt.xlabel('Principal components')
+    plt.title('Proportion of  Explained Variance')
+    
+    # Cumulative explained variance
+    plt.subplot(1, 2, 2)
+    plt.plot(range(1, len(pca.explained_variance_ratio_) + 1), np.cumsum(pca.explained_variance_ratio_), marker='o', linestyle='-', color='blue')
+    plt.xlabel('Principal components')
+    plt.title('Cumulative Proportion of  Explained Variance')
+
+    plt.tight_layout()
+    plt.show()
 
 #####################################################################################################################
