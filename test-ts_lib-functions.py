@@ -81,11 +81,13 @@ def test_periodic_kde_plot_grouping():
     df = pd.DataFrame(data)
     df.set_index('date', inplace=True)
 
-    # Mock plt.plot to not display the plot
-    with patch('matplotlib.pyplot.plot') as mocked_plot:
-        periodic_kde(df, 'value', 'M')
-        # Assuming there are 12 months, there should be 12 calls to plot
-        assert mocked_plot.call_count == 12, "Plot was not called once for each month"
+    # Mock plt.show to not display the plot, assuming your function uses plt.show() to display each plot
+    with patch('matplotlib.pyplot.show') as mocked_show:
+        # Execute the function with the DataFrame
+        periodic_kde(df, 'value', 'M', index=True)
+        
+        # Verify plt.show() was called 12 times, once for each month with data
+        assert mocked_show.call_count == 12, "Plot was not called once for each month with data"
 
 
 #####################################################################################################################
@@ -118,13 +120,12 @@ def test_seasonal_decompositions():
     df = pd.DataFrame(data)
     df.set_index('date', inplace=True)
 
-    # Mock seasonal_decompose to return a MagicMock object (to avoid actual decomposition)
-    with patch('statsmodels.tsa.seasonal.seasonal_decompose', return_value=MagicMock()), \
+    with patch('statsmodels.tsa.seasonal.seasonal_decompose') as mock_decompose, \
          patch('matplotlib.pyplot.show'):
+        # Call the function under test
         seasonal_decompositions(df, 'value')
-        # Verify seasonal_decompose was called with the 'value' series
-        seasonal_decompose.assert_called()
-
+        # Now use mock_decompose to check if it was called
+        mock_decompose.assert_called()
 
 #####################################################################################################################
 # Test the seasonal_catplot function
