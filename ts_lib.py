@@ -161,9 +161,9 @@ def seasonal_decompositions(df, label_col):
         plt.legend()
         plt.show()
 
-
+'''
 def periodic_kde(df, label_col, freq, dt_col:str='none', index=False):
-    ''' 
+     
     Takes pandas DataFrame with datetime column and target variable 
     and returns periodic kde plots at a specified frequency
 
@@ -172,7 +172,7 @@ def periodic_kde(df, label_col, freq, dt_col:str='none', index=False):
     : freq : 'M' for month or 'Y' for year
     : dt_col : specify column name if it's not the index
     : index : boolean, true if datetime information is stored in the index
-    '''
+    
     if index == True:
         df = df.reset_index().rename(columns={'index':'date'})
         dt_col = 'date'
@@ -185,7 +185,20 @@ def periodic_kde(df, label_col, freq, dt_col:str='none', index=False):
             month_num = month[dt_col].dt.month.values[0]
             month_name = calendar.month_name[month_num]
             month[label_col].plot(kind='kde', label=month_name, figsize=(20,10), legend=True, title=label_col)
+'''
 
+def periodic_kde(df, label_col, freq, dt_col=None, index=False):
+    if index:
+        df = df.reset_index().rename(columns={'index': 'date'})
+        dt_col = 'date'
+
+    g = df.groupby(pd.Grouper(key=dt_col, freq=freq))
+    for _, month in g:
+        if len(month) > 1:
+            month_num = month[dt_col].dt.month.iloc[0]  # Adjusted access to month
+            month_name = calendar.month_name[month_num]
+            month[label_col].plot(kind='kde', label=month_name, figsize=(20, 10), legend=True, title=label_col)
+    plt.show()
 
 #####################################################################################################################
             

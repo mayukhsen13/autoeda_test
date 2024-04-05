@@ -74,20 +74,28 @@ def test_append_datetime_cols_format_parsing():
 #####################################################################################################################
 
 # Test the periodic_kde_plot function
-def test_periodic_kde_plot_grouping():
-    # Sample DataFrame with monthly data
-    data = {'date': pd.date_range(start='2020-01-01', periods=12, freq='M'),
-            'value': range(1, 13)}
+
+@pytest.fixture
+def sample_dataframe():
+    """Fixture to provide a sample DataFrame for tests."""
+    data = {'date': pd.date_range(start='2020-01-01', periods=60, freq='D'),  # Two months of data
+            'value': range(60)}  # Simple range of values
     df = pd.DataFrame(data)
     df.set_index('date', inplace=True)
+    return df
 
-    # Assuming pandas plot function is used for plotting, we mock it
-    with patch('pandas.plotting._core.PlotAccessor.__call__') as mocked_plot:
+def test_periodic_kde_plot_grouping(sample_dataframe):
+    """Test that periodic_kde attempts to generate a KDE plot for each non-empty month."""
+    # We expect two non-empty months based on the sample data provided
+    expected_plot_calls = 2
+
+    with patch('matplotlib.pyplot.plot') as mocked_plot:
         # Execute the function with the DataFrame
-        periodic_kde(df, 'value', 'M', index=True)
+        periodic_kde(sample_dataframe, 'value', 'M', index=True)
         
-        # Verify the plot function was called 12 times, once for each month with data
-        assert mocked_plot.call_count == 12, "Plot was not called once for each month with data"
+        # Verify plt.plot was called the expected number of times
+        assert mocked_plot.call_count == expected_plot_calls, f"Expected {expected_plot_calls} plot calls, got {mocked_plot.call_count}"
+
 
 
 #####################################################################################################################
