@@ -81,13 +81,13 @@ def test_periodic_kde_plot_grouping():
     df = pd.DataFrame(data)
     df.set_index('date', inplace=True)
 
-    # Mock plt.show to not display the plot, assuming your function uses plt.show() to display each plot
-    with patch('matplotlib.pyplot.show') as mocked_show:
+    # Assuming pandas plot function is used for plotting, we mock it
+    with patch('pandas.plotting._core.PlotAccessor.__call__') as mocked_plot:
         # Execute the function with the DataFrame
         periodic_kde(df, 'value', 'M', index=True)
         
-        # Verify plt.show() was called 12 times, once for each month with data
-        assert mocked_show.call_count == 12, "Plot was not called once for each month with data"
+        # Verify the plot function was called 12 times, once for each month with data
+        assert mocked_plot.call_count == 12, "Plot was not called once for each month with data"
 
 
 #####################################################################################################################
