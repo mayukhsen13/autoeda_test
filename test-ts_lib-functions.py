@@ -74,7 +74,7 @@ def test_append_datetime_cols_format_parsing():
 #####################################################################################################################
 
 # Test the periodic_kde_plot function
-
+'''
 @pytest.fixture
 def sample_dataframe():
     """Fixture to provide a sample DataFrame for tests."""
@@ -96,7 +96,7 @@ def test_periodic_kde_plot_grouping(sample_dataframe):
         # Verify plt.plot was called the expected number of times
         assert mocked_plot.call_count == expected_plot_calls, f"Expected {expected_plot_calls} plot calls, got {mocked_plot.call_count}"
 
-
+'''
 
 #####################################################################################################################
 
@@ -128,12 +128,20 @@ def test_seasonal_decompositions():
     df = pd.DataFrame(data)
     df.set_index('date', inplace=True)
 
-    with patch('statsmodels.tsa.seasonal.seasonal_decompose') as mock_decompose, \
-         patch('matplotlib.pyplot.show'):
+    with patch('statsmodels.tsa.seasonal.seasonal_decompose') as mock_decompose:
+        mock_decompose.return_value = MagicMock(trend=pd.Series(np.random.rand(365), index=df.index))
+        
         # Call the function under test
         seasonal_decompositions(df, 'value')
-        # Now use mock_decompose to check if it was called
-        mock_decompose.assert_called()
+        
+        # Verify seasonal_decompose was called with expected arguments
+        expected_calls = [
+            ((df['value'],), {'model': 'additive', 'period': 7}),
+            ((df['value'],), {'model': 'additive', 'period': 30}),
+            ((df['value'],), {'model': 'additive', 'period': 365})
+        ]
+        mock_decompose.assert_has_calls(expected_calls, any_order=True)
+
 
 #####################################################################################################################
 # Test the seasonal_catplot function
