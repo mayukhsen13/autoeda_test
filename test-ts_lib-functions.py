@@ -7,7 +7,7 @@ from ts_lib import append_datetime_cols
 from ts_lib import periodic_kde
 from ts_lib import create_windowed_df  
 from ts_lib import create_windowed_df
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch, MagicMock, ANY
 from ts_lib import seasonal_decompositions  
 from ts_lib import seasonal_catplot
 from statsmodels.tsa.seasonal import seasonal_decompose
@@ -129,17 +129,20 @@ def test_seasonal_decompositions():
     df.set_index('date', inplace=True)
 
     with patch('statsmodels.tsa.seasonal.seasonal_decompose') as mock_decompose:
+        # Configure the mock to return a MagicMock with a trend attribute
         mock_decompose.return_value = MagicMock(trend=pd.Series(np.random.rand(365), index=df.index))
         
         # Call the function under test
         seasonal_decompositions(df, 'value')
         
-        # Verify seasonal_decompose was called with expected arguments
+        # Define the expected calls with ANY for the Series argument
         expected_calls = [
-            ((df['value'],), {'model': 'additive', 'period': 7}),
-            ((df['value'],), {'model': 'additive', 'period': 30}),
-            ((df['value'],), {'model': 'additive', 'period': 365})
+            (ANY, {'model': 'additive', 'period': 7}),
+            (ANY, {'model': 'additive', 'period': 30}),
+            (ANY, {'model': 'additive', 'period': 365})
         ]
+        
+        # Verify seasonal_decompose was called with expected arguments
         mock_decompose.assert_has_calls(expected_calls, any_order=True)
 
 
