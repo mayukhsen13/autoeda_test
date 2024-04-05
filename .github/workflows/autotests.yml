@@ -14,8 +14,11 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install pytest jupytext
+        pip install pytest jupytext pandas numpy 
+        
     - name: Convert Notebooks
       run: jupytext --to py example_time_series.ipynb
-    - name: Execute PyTest
-      run: pytest test-ts_lib-functions.py test-consistency_ts.py
+    - name: Execute PyTest on library 
+      run: pytest test-ts_lib-functions.py
+    - name: Execute PyTest for data consistency
+      run: pytest test-consistency_ts.py
