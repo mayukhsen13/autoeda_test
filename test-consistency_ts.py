@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-from example_timeseries import df
+from example_time_series import df
 
 '''
 def check_column_homogeneity(dataframe):
