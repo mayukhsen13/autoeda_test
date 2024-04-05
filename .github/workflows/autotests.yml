@@ -19,8 +19,8 @@ jobs:
         
     - name: Convert Notebooks
       run: jupytext --to py example.ipynb
-    - name: Execute PyTest on library 
-      run: pytest test_library.py
     - name: Execute PyTest for data consistency
       run: pytest test-consistency_ts.py
+    - name: Execute PyTest on library 
+      run: pytest test_library.py
     
