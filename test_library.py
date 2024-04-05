@@ -3,6 +3,7 @@ from unittest.mock import patch
 import pandas as pd
 import numpy as np
 from library import AutoEDA
+from library import create_windowed_df
 from unittest.mock import patch, MagicMock, ANY
 from statsmodels.tsa.seasonal import seasonal_decompose
 
@@ -65,15 +66,16 @@ def test_append_datetime_cols_format_parsing():
             'value': [1, 2, 3]}
     df = pd.DataFrame(data)
 
-    # Initialize AutoEDA with the DataFrame
-    auto_eda = AutoEDA(df=df, label_col='value', dt_col='date', index=False)
+    # Initialize AutoEDA with the DataFrame and the desired datetime format
+    auto_eda = AutoEDA(df=df, label_col='value', dt_col='date', dt_format='%d-%Y-%m', index=False)
 
-    # Apply function with a custom datetime format
-    result_df = auto_eda.append_datetime_cols(dt_format='%d-%Y-%m')
+    # Apply function
+    result_df = auto_eda.append_datetime_cols()
 
     # Check if dates were parsed correctly
     assert all(result_df['year'] == 2020), "Year was not parsed correctly"
     assert all(result_df['month'] == 1), "Month was not parsed correctly"
+
 
 #####################################################################################################################
 
@@ -90,18 +92,17 @@ def test_create_windowed_df():
     dates = pd.date_range(start='2020-01-01', periods=10, freq='D')
     df = pd.DataFrame(data, index=dates)
 
-    # Initialize AutoEDA with the DataFrame
-    auto_eda = AutoEDA(df=df, label_col='value', index=True)
-
-    # Apply function
+    # Directly apply the standalone function
     num_periods = 3
-    result_df = auto_eda.create_windowed_df(num_periods, 'value')
+    # Assuming `create_windowed_df` is correctly imported at the top of your test file
+    result_df = create_windowed_df(df, num_periods, 'value')
 
     # Check the shape of the resulting DataFrame
     assert result_df.shape == (7, 4), "Windowed DataFrame shape is incorrect"
     # Check if the correct columns were created
-    expected_columns = ['value_t1', 'value_t2', 'value_t3', 'value_t4']
+    expected_columns = ['value', 'value_t-1', 'value_t-2', 'value_t-3']  # Adjusted expected columns based on your function's logic
     assert all(col in result_df.columns for col in expected_columns), "Not all expected shifted columns were created"
+
 
 #####################################################################################################################
 # Test the seasonal_decompositions function

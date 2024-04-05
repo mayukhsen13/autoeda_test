@@ -8,7 +8,6 @@ import matplotlib as mpl
 import calendar
 from IPython.display import display
 
-
 #####################################################################################################################
 
 
@@ -55,7 +54,7 @@ class AutoEDA:
             t_df = self.df.reset_index().rename(columns={'index':'date'})
             dt_col_name = 'date'
         else:
-            t_df = df.copy()
+            t_df = self.df.copy()
             dt_col_name = self.dt_col
 
         dt_col = pd.to_datetime(t_df[dt_col_name],
