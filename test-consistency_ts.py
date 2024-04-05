@@ -15,7 +15,9 @@ def check_column_homogeneity(dataframe):
             print(f"Column '{column_name}' is homogeneous ({inferred_column_dtype}).")
            
  '''
-
+def test_df_not_empty():
+    """Ensure the DataFrame is not empty."""
+    assert not df.empty
 
 # Function to check for missing (NA) values
 def check_missing_values(dataframe):
