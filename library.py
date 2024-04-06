@@ -244,7 +244,7 @@ def create_windowed_df(df, num_periods, label_col):
     df_copy = df_copy[df_copy.columns[::-1]]
     return df_copy 
 
-def make_fourier(df:pd.DataFrame, periodic_cols:list, K:int=1) -> pd.DataFrame:
+def make_fourier(df:pd.DataFrame, periodic_cols:list, K:int) -> pd.DataFrame:
     ''' 
     see: https://otexts.com/fpp3/useful-predictors.html#fourier-series and https://otexts.com/fpp2/dhr.html 
 
@@ -262,29 +262,67 @@ def make_fourier(df:pd.DataFrame, periodic_cols:list, K:int=1) -> pd.DataFrame:
 
 # Harmonic Regression
 
+def harmonic_regression(df, target_col, K):
+    """
+    Fits a dynamic harmonic regression model using OLS.
+    
+    :param df: DataFrame with Fourier terms and the target variable.
+    :param target_col: The name of the target column.
+    :param K: The number of harmonics to be used.
+    :return: The OLS model and the DataFrame with a new column for predictions.
+    """
+    # Generate Fourier terms if not present in df
+    if not any('sin' in col for col in df.columns) or not any('cos' in col for col in df.columns):
+        df = make_fourier(df, [target_col], K)
 
-def harmonic_regression(df, target_col, harmonic_cols):
-    '''
-    Fits a harmonic regression model to the specified target variable in the DataFrame.
-    Assumes that sine and cosine terms for the frequencies are already calculated and present in the DataFrame.
+    predictors = [col for col in df.columns if 'sin' in col or 'cos' in col]
 
-    :param df: DataFrame containing the data
-    :param target_col: Column name of the target variable
-    :param harmonic_cols: List of column names of the sine and cosine terms
-    :return: Fitted model and the DataFrame with predictions
-    '''
+    # Diagnostic print-out to check the variance of predictors
+    print("Predictor Variance:")
+    print(df[predictors].var())
 
-    # Add a constant to the DataFrame for the intercept
-    X = sm.add_constant(df[harmonic_cols])
+    X = df[predictors]
     y = df[target_col]
 
-    # Fit the regression model
+    # Add a constant term for the intercept
+    X = sm.add_constant(X)
+
+    # Fit the OLS model
     model = sm.OLS(y, X).fit()
 
-    # Predict using the model
-    df['predicted'] = model.predict(X)
+    # Generate predictions
+    df['harmonic_pred'] = model.predict(X)
 
     return model, df
+
+def find_optimal_K(df, target_col, max_K):
+    """
+    Finds the optimal number of harmonics for harmonic regression based on AIC.
+    
+    :param df: DataFrame with the time series data.
+    :param target_col: The name of the target column.
+    :param max_K: The maximum number of harmonics to consider.
+    :return: The optimal number of harmonics, the model with the lowest AIC, and the DataFrame with predictions.
+    """
+    best_aic = np.inf
+    best_k = 0
+    best_model = None
+    best_df = None
+    
+    for K in range(1, max_K + 1):
+        current_model, current_df = harmonic_regression(df.copy(), target_col, K)
+        current_aic = current_model.aic
+        
+        print(f"K: {K}, AIC: {current_aic}")
+        
+        if current_aic < best_aic:
+            best_aic = current_aic
+            best_k = K
+            best_model = current_model
+            best_df = current_df
+            
+    print(f"Best K by AIC: {best_k}")
+    return best_k, best_model, best_df 
 
 #Principal Component Analysis
 
